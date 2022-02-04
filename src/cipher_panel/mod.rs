@@ -1,5 +1,5 @@
-use eframe::egui;
-
+use crate::cipher_id::CipherID;
+use eframe::egui::{self, TextEdit, TextStyle, RichText, Color32};
 
 use crate::ciphers::*;
 
@@ -9,38 +9,25 @@ pub mod affine_controls;
 pub mod decoder_ring_controls;
 pub mod m209_controls;
 pub mod general_sub_controls;
+pub mod playfair_controls;
+pub mod cyclic_key_controls;
+pub mod autokey_controls;
+pub mod progressive_key_controls;
 
 pub trait View {
-    fn ui(&mut self, ui: &mut egui::Ui, input: &mut String, output: &mut String);
+    fn ui(&mut self, ui: &mut egui::Ui, input: &mut String, output: &mut String, errors: &mut String);
 }
 
-#[derive(PartialEq)]
-pub enum CipherID {
-    Caesar,
-    Affine,
-    Decoder,
-    Substitution,
-    M209,
+fn combox_box(ciphers: &[CipherID], identifier: &'static str, active_cipher: &mut CipherID, ui: &mut egui::Ui) {
+    egui::ComboBox::from_id_source(identifier)
+        .selected_text(identifier)
+        .show_ui(ui, |ui| {
+            for id in ciphers {
+                ui.selectable_value(active_cipher, *id, format!("{}",id));
+            }
+        });
+    ui.add_space(10.0);
 }
-
-impl Default for CipherID {
-    fn default() -> Self {
-        Self::Caesar
-    }
-}
-
-impl CipherID {
-    pub fn description(&self) -> &'static str {
-        match self {
-            CipherID::Caesar => "The Caesar Cipher is perhaps the oldest and simplest of ciphers. A value is chosen that shifts each letter of the alphabet that many positions. For example a shift of 2 turna A in C and Y into A.",
-            CipherID::Affine => "The Affine Cipher is a simple extension of the Caesar Cipher that applies an affine transform to the alphabet. Each letter's position has a value added to it and then is multiplied by a certain value. The need for a unique inverse to the multiplication adds some complexity to this cipher.",
-            CipherID::Decoder => "A Decoder Ring (as popularized by Little Orphan Annie and Captain Midnight) is a variable on the Caesar cipher. Rather than shift the letters each letter replaced with its numerical value which is then shifted.",
-            CipherID::Substitution => "The General Substituion Cipher maps a set of symbols one-to-one onto another arbitary set. This implementation allows only maping the symbols of an alphabet but all simple substitution ciphers are included in principle.",
-            CipherID::M209 => "The M209 was an entirely mechanical cipher machine used by the US Military with very complex key settings. The positions of the pins and lugs were set once a day. The exteral positions of the rotors were changed with each message.",
-        }
-    }
-}
-
 
 pub struct ControlPanel {
     caesar: Caesar,
@@ -48,6 +35,10 @@ pub struct ControlPanel {
     decoder_ring: DecoderRing,
     gen_sub: GeneralSubstitution,
     m209: M209,
+    cyclic_key: CyclicKey,
+    autokey: Autokey,
+    progressive_key: ProgressiveKey,
+    playfair: Playfair,
 }
 
 impl Default for ControlPanel {
@@ -58,31 +49,122 @@ impl Default for ControlPanel {
             decoder_ring: DecoderRing::default(),
             gen_sub: GeneralSubstitution::default(),
             m209: M209::default(),
+            cyclic_key: CyclicKey::default(),
+            autokey: Autokey::default(),
+            playfair: Playfair::default(),
+            progressive_key: ProgressiveKey::default(),
         }
     }
 }
 
 impl ControlPanel {
-    pub fn ui(&mut self, ui: &mut egui::Ui, input: &mut String, output: &mut String, active_cipher: &mut CipherID) {
+    pub fn ui(&mut self, ui: &mut egui::Ui, input: &mut String, output: &mut String, errors: &mut String, active_cipher: &mut CipherID) {
         
         ui.horizontal(|ui| {
-            ui.selectable_value(active_cipher, CipherID::Caesar, "Caesar");
-            ui.selectable_value(active_cipher, CipherID::Decoder, "Decoder Ring");
-            ui.selectable_value(active_cipher, CipherID::Affine, "Affine");
-            ui.selectable_value(active_cipher, CipherID::Substitution, "General Substitution");
-            ui.selectable_value(active_cipher, CipherID::M209, "M209");
+            combox_box(
+                &[CipherID::Caesar, CipherID::Decoder, CipherID::Affine, CipherID::Substitution],
+                "Simple Substitution",
+                active_cipher, ui
+            );
+    
+            combox_box(
+                &[CipherID::CyclicKey, CipherID::Autokey, CipherID::ProgressiveKey],
+                "Polyalphabetic",
+                active_cipher, ui
+            );
+    
+            combox_box(
+                &[CipherID::M209],
+                "Rotor Machine",
+                active_cipher, ui
+            );
+    
+            combox_box(
+                &[CipherID::Playfair],
+                "Other",
+                active_cipher, ui
+            );
         });
 
         ui.add_space(16.0);
         ui.separator();
         ui.add_space(16.0);
 
+        ui.label(format!{"Description:\n{}",active_cipher.description()});
+
+        ui.add_space(16.0);
+        ui.separator();
+        ui.add_space(16.0);
+
         match active_cipher {
-            CipherID::Caesar => self.caesar.ui(ui, input, output),
-            CipherID::Affine => self.affine.ui(ui, input, output),
-            CipherID::Decoder => self.decoder_ring.ui(ui, input, output),
-            CipherID::Substitution => self.gen_sub.ui(ui, input, output),
-            CipherID::M209 => self.m209.ui(ui, input, output),
+            CipherID::Caesar => self.caesar.ui(ui, input, output, errors),
+            CipherID::Affine => self.affine.ui(ui, input, output, errors),
+            CipherID::Decoder => self.decoder_ring.ui(ui, input, output, errors),
+            CipherID::Substitution => self.gen_sub.ui(ui, input, output, errors),
+            CipherID::M209 => self.m209.ui(ui, input, output, errors),
+            CipherID::CyclicKey => self.cyclic_key.ui(ui, input, output, errors),
+            CipherID::Autokey => self.autokey.ui(ui, input, output, errors),
+            CipherID::ProgressiveKey => self.progressive_key.ui(ui, input, output, errors),
+            CipherID::Playfair => self.playfair.ui(ui, input, output, errors),
         }
+    }
+}
+
+
+
+pub struct DisplayPanel {
+}
+
+impl Default for DisplayPanel {
+    fn default() -> Self {
+        Self{ }
+    }
+}
+
+impl DisplayPanel {
+    pub fn ui(&mut self, ui: &mut egui::Ui, input: &mut String, output: &mut String, errors: &mut String) {
+       
+        ui.add_space(32.0);
+        ui.label("INPUT TEXT");
+        ui.add(TextEdit::multiline(input).text_style(TextStyle::Monospace));
+        ui.add_space(16.0);
+        ui.label("OUTPUT TEXT");
+        ui.add(TextEdit::multiline(output).text_style(TextStyle::Monospace));
+       
+        // ui.horizontal(|ui| {
+        //     if ui.button("UPPERCASE").clicked() {
+        //         input = &mut input.to_uppercase();
+        //         output = &mut output.to_uppercase();
+        //     }
+        //     if ui.button("lowercase").clicked() {
+        //         input = &mut input.to_lowercase();
+        //         output = &mut output.to_lowercase();
+        //     }
+        // });
+       
+        // if ui.button("strip whitespace").clicked() {
+        //     input = &mut input.split_whitespace().collect();
+        //     output = &mut output.split_whitespace().collect();
+        // }
+
+        if ui.button("clear").clicked() {
+            input.clear();
+            output.clear();
+            errors.clear();
+        }
+
+        if ui.button("swap input/output").clicked() {
+            std::mem::swap(input, output)
+        }
+       
+        if !errors.is_empty() {
+            ui.add_space(24.0);
+            ui.label(RichText::new(errors.clone())
+                .color(Color32::RED)
+                .background_color(Color32::BLACK)
+                .monospace()
+            );
+        }
+
     }
 }

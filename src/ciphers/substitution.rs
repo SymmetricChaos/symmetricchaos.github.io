@@ -2,6 +2,7 @@ use rand::prelude::ThreadRng;
 use crate::text_functions::{shuffled_str, LATIN_UPPER};
 use super::Cipher;
 use std::collections::HashMap;
+use crate::errors::CipherError;
 
 pub struct GeneralSubstitution {
     alphabet1: String,
@@ -38,23 +39,23 @@ impl Default for GeneralSubstitution {
 }
 
 impl Cipher for GeneralSubstitution {
-    fn encrypt(&self, text: &str) -> Result<String,&'static str> {
+    fn encrypt(&self, text: &str) -> Result<String,CipherError> {
         let mut out = "".to_string();
         for c in text.chars() {
             match self.map.get(&c) {
                 Some(o) => out.push(*o),
-                None => return Err("Unknown character encountered"),
+                None => return Err(CipherError::invalid_input_char(c))
             }
         }
         Ok(out)
     }
 
-    fn decrypt(&self, text: &str) -> Result<String,&'static str> {
+    fn decrypt(&self, text: &str) -> Result<String,CipherError> {
         let mut out = "".to_string();
         for c in text.chars() {
             match self.map_inv.get(&c) {
                 Some(o) => out.push(*o),
-                None => return Err("Unknown character encountered"),
+                None => return Err(CipherError::invalid_input_char(c))
             }
         }
         Ok(out)
@@ -70,11 +71,23 @@ impl Cipher for GeneralSubstitution {
         }
     }
 
-    fn input_alphabet(&mut self) -> &mut String {
+    fn get_input_alphabet(&mut self) -> &String {
         &mut self.alphabet1
     }
 
-    fn output_alphabet(&mut self) -> &mut String {
+    fn get_output_alphabet(&mut self) -> &String {
         &mut self.alphabet2
+    }
+
+    fn get_mut_input_alphabet(&mut self) -> &mut String {
+        &mut self.alphabet1
+    }
+
+    fn get_mut_output_alphabet(&mut self) -> &mut String {
+        &mut self.alphabet2
+    }
+
+    fn validate_settings(&self) -> Result<(),crate::errors::CipherErrors> {
+        todo!()
     }
 }

@@ -1,6 +1,6 @@
 use rand::{Rng, prelude::ThreadRng};
 use crate::text_functions::LATIN_UPPER;
-
+use crate::errors::{CipherError, CipherErrors};
 use super::Cipher;
 
 pub struct Caesar {
@@ -21,7 +21,7 @@ impl Caesar {
         self.alphabet.chars().nth(v)
     }
 
-    pub fn length(&self) -> usize {
+    pub fn alphabet_len(&self) -> usize {
         self.alphabet.chars().count()
     }
 }
@@ -33,36 +33,36 @@ impl Default for Caesar {
 }
 
 impl Cipher for Caesar {
-    fn encrypt(&self, text: &str) -> Result<String,&'static str> {
+    fn encrypt(&self, text: &str) -> Result<String,CipherError> {
         let symbols = text.chars();
         let mut out = "".to_string();
         for s in symbols {
             let val = self.char_to_val(s);
             let n = match val {
-                Some(v) => (v + self.shift) % self.length(),
-                None => return Err("Unknown character encountered")
+                Some(v) => (v + self.shift) % self.alphabet_len(),
+                None => return Err(CipherError::invalid_input_char(s))
             };
             let char = match self.val_to_char(n) {
                 Some(c) => c,
-                None => return Err("Unknown character encountered")
+                None => return Err(CipherError::invalid_input_char(s))
             };
             out.push(char)
         }
         Ok(out)
     }
 
-    fn decrypt(&self, text: &str) -> Result<String,&'static str> {
+    fn decrypt(&self, text: &str) -> Result<String,CipherError> {
         let symbols = text.chars();
         let mut out = "".to_string();
         for s in symbols {
             let val = self.char_to_val(s);
             let n = match val {
-                Some(v) => (v + self.length() - self.shift) % self.length(),
-                None => return Err("Unknown character encountered")
+                Some(v) => (v + self.alphabet_len() - self.shift) % self.alphabet_len(),
+                None => return Err(CipherError::invalid_input_char(s))
             };
             let char = match self.val_to_char(n) {
                 Some(c) => c,
-                None => return Err("Unknown character encountered")
+                None => return Err(CipherError::invalid_input_char(s))
             };
             out.push(char)
         }
@@ -74,11 +74,50 @@ impl Cipher for Caesar {
         self.shift = rng.gen_range(0..length);
     }
 
-    fn input_alphabet(&mut self) -> &mut String {
+    fn get_input_alphabet(&mut self) -> &String {
         &mut self.alphabet
     }
 
-    fn output_alphabet(&mut self) -> &mut String {
+    fn get_output_alphabet(&mut self) -> &String {
         &mut self.alphabet
+    }
+
+    fn get_mut_input_alphabet(&mut self) -> &mut String {
+        &mut self.alphabet
+    }
+
+    fn get_mut_output_alphabet(&mut self) -> &mut String {
+        &mut self.alphabet
+    }
+
+    fn validate_settings(&self) -> Result<(),CipherErrors> {
+        if self.shift > self.alphabet_len() {
+            return Err(CipherErrors::new(vec![CipherError::Key(String::from("key value is incorrect"))]))
+        }
+        Ok(())
+    }
+}
+
+
+
+
+
+#[cfg(test)]
+mod caesar_tests {
+    use super::*;
+
+    const PLAINTEXT: &'static str = "THEQUICKBROWNFOXJUMPSOVERTHELAZYDOG";
+    const CIPHERTEXT: &'static str = "WKHTXLFNEURZQIRAMXPSVRYHUWKHODCBGRJ";
+
+    #[test]
+    fn encrypt_test() {
+        let cipher = Caesar::new(3,LATIN_UPPER);
+        assert_eq!(cipher.encrypt(CIPHERTEXT).unwrap(), PLAINTEXT);
+    }
+
+    #[test]
+    fn decrypt_test() {
+        let cipher = Caesar::new(3,LATIN_UPPER);
+        assert_eq!(cipher.decrypt(CIPHERTEXT).unwrap(), PLAINTEXT);
     }
 }
