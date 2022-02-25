@@ -27,7 +27,11 @@ impl DecoderRing {
 
     fn valid_code_group(&self, s: &str) -> Result<usize, CipherError> {
         match s.parse::<usize>() {
-            Ok(n) => if n < self.length() { Ok(n) } else { Err(CipherError::input("invalid code group")) },
+            Ok(n) => if n < self.length() { 
+                    Ok(n) 
+                } else { 
+                    Err(CipherError::input("invalid code group")) 
+                },
             Err(_) => return Err(CipherError::input("invalid code group")),
         }
     }
@@ -77,11 +81,11 @@ impl Cipher for DecoderRing {
         self.index = rng.gen_range(0..self.alphabet.len());
     }
 
-    fn get_input_alphabet(&mut self) -> &String {
-        &mut self.alphabet
+    fn get_input_alphabet(&self) -> &String {
+        &self.alphabet
     }
 
-    fn get_output_alphabet(&mut self) -> &String {
+    fn get_output_alphabet(&self) -> &String {
         todo!("output alphabet should be digits and spaces")
     }
 
@@ -93,7 +97,7 @@ impl Cipher for DecoderRing {
         todo!("output alphabet should be digits and spaces")
     }
 
-    fn validate_settings(&self) -> Result<(),crate::errors::CipherErrors> {
+    fn validate_settings(&self) -> Result<(), CipherError> {
         todo!()
     }
 }

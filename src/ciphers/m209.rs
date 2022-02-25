@@ -1,7 +1,8 @@
 use rand::prelude::ThreadRng;
 use rand::Fill;
 use super::Cipher;
-use crate::text_functions::{LATIN_UPPER,random_char_vec};
+use crate::text_functions::{random_char_vec};
+use crate::text_types::{PresetAlphabet::*};
 use lazy_static::lazy_static;
 use std::{collections::VecDeque, fmt};
 use crate::errors::CipherError;
@@ -35,13 +36,13 @@ impl fmt::Display for Cage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut s = "Cage\n".to_string();
         for b in self.lugs.chunks(9).collect_vec() {
-            for lug in b {
-                let entry = format!("{}-{}  ",lug.0,lug.1);
+            for (lug0, lug1) in b {
+                let entry = format!("{lug0}-{lug1}  ");
                 s.push_str(&entry)
             }
             s.push('\n')
         }
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -113,7 +114,7 @@ impl fmt::Display for Rotor {
         for (pos,letter) in self.alphabet.iter().enumerate() {
             if pos == self.active {
                 // bracket the active position
-                s.push_str(&format!("[{}]",letter));
+                s.push_str(&format!("[{letter}]"));
             } else {
                 s.push(*letter)
             }
@@ -170,7 +171,7 @@ impl Default for M209 {
                     (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0),
                     (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0)
             ], 
-            alphabet: String::from(LATIN_UPPER) 
+            alphabet: String::from(BasicLatin) 
         }
     }
 }
@@ -295,12 +296,12 @@ impl Cipher for M209 {
 
     }
 
-    fn get_input_alphabet(&mut self) -> &String {
-        &mut self.alphabet
+    fn get_input_alphabet(&self) -> &String {
+        &self.alphabet
     }
 
-    fn get_output_alphabet(&mut self) -> &String {
-        &mut self.alphabet
+    fn get_output_alphabet(&self) -> &String {
+        &self.alphabet
     }
 
     fn get_mut_input_alphabet(&mut self) -> &mut String {
@@ -311,7 +312,7 @@ impl Cipher for M209 {
         &mut self.alphabet
     }
 
-    fn validate_settings(&self) -> Result<(),crate::errors::CipherErrors> {
+    fn validate_settings(&self) -> Result<(), CipherError> {
         todo!()
     }
 }

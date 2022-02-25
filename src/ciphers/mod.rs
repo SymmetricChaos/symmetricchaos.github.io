@@ -16,22 +16,35 @@ pub use m209::M209;
 pub mod playfair;
 pub use playfair::Playfair;
 
-pub mod cyclic_key;
-pub use cyclic_key::CyclicKey;
-
-pub mod autokey;
-pub use autokey::Autokey;
-
-pub mod progressive_key;
-pub use progressive_key::ProgressiveKey;
+pub mod slidefair;
+pub use slidefair::Slidefair;
 
 pub mod alberti_disk;
 pub use alberti_disk::Alberti;
 
-pub mod composite;
+pub mod polybius;
+pub use polybius::Polybius;
+
+pub mod m94;
+pub use m94::M94;
+
+pub mod vigenere;
+pub use vigenere::Vigenere;
+
+pub mod beaufort;
+pub use beaufort::Beaufort;
+
+pub mod columnar;
+pub use columnar::Columnar;
+
+pub mod adfgvx;
+pub use adfgvx::ADFGVX;
+
+pub mod b64;
+pub use b64::B64;
 
 use rand::prelude::ThreadRng;
-use crate::errors::{CipherError, CipherErrors};
+use crate::errors::CipherError;
 
 pub trait Cipher {
     fn encrypt(&self, text: &str) -> Result<String,CipherError>;
@@ -39,15 +52,16 @@ pub trait Cipher {
     fn randomize(&mut self, rng: &mut ThreadRng);
     fn get_mut_input_alphabet(&mut self) -> &mut String;
     fn get_mut_output_alphabet(&mut self) -> &mut String;
-    fn get_input_alphabet(&mut self) -> &String;
-    fn get_output_alphabet(&mut self) -> &String;
-    fn validate_settings(&self) -> Result<(),CipherErrors>;
-    //fn get_key_state(&self) -> some complex thing? idk or this could be optional
+    fn get_input_alphabet(&self) -> &String;
+    fn get_output_alphabet(&self) -> &String;
+    fn validate_settings(&self) -> Result<(),CipherError>;
 }
+
 
 
 #[derive(Debug,Copy,Clone,PartialEq, Eq)]
 pub enum PolyMode {
-    Vigenere,
-    Beaufort,
+    CylicKey,
+    Autokey,
+    ProgKey
 }

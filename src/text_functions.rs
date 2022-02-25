@@ -1,14 +1,7 @@
 use itertools::Itertools;
 use rand::prelude::{ThreadRng, SliceRandom, IteratorRandom};
+use crate::errors::CipherError;
 
-use crate::{errors::CipherError};
-
-pub const LATIN_UPPER: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-pub const LATIN_LOWER: &str = "abcdefghijklmnopqrstuvwxyz";
-pub const LATIN_UPPER_NO_J: &'static str = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
-pub const LATIN_UPPER_NO_Q: &'static str = "ABCDEFGHIJKLMNOPRSTUVWXYZ";
-pub const LATIN_UPPER_DIGITS: &'static str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; 
-pub const DIGITS: &'static str = "0123456789";
 
 pub fn shuffled_str(s: &str, rng: &mut ThreadRng) -> String {
     let mut characters = s.chars().collect::<Vec<char>>();
@@ -68,6 +61,32 @@ pub fn string_pairs(text: &str) -> Vec<&str> {
     }
 }
 
+/*
+Rank the characters of a string by their order in the alphabet, making every entry unique and using the smallest possible numbers
+The text APPLE with the BasicLatin alphabet would give: [0, 3, 4, 2, 1, 5]
+*/
+pub fn rank_str(text: &str, alphabet: &str) -> Vec<usize> {
+    let mut values = text.chars().map(|x| alphabet.chars().position(|c| x == c).unwrap()).collect::<Vec<usize>>();
+
+    let len = values.len();
+    let biggest = alphabet.chars().count();
+
+    let mut out = vec![0usize;len];
+
+    for i in 0..len {
+        let m = values.iter().min().unwrap();
+        for (pos,v) in values.iter().enumerate() {
+            if v == m {
+                out[pos] = i;
+                values[pos] = biggest;
+                break
+            }
+        }
+    }
+
+    out
+}
+
 
 // use itertools::{sorted,equal};
 
@@ -88,12 +107,12 @@ pub fn string_pairs(text: &str) -> Vec<&str> {
 //     true
 // }
 
-
-pub fn keyed_alphabet(keyword: &str, alphabet: &str) -> Result<String,CipherError> {
+// Silently ignores invalid characters
+pub fn keyed_alphabet(keyword: &str, alphabet: &str) -> String {
     let mut keyed_alpha = String::with_capacity(alphabet.len());
     for c in keyword.chars() {
         if !alphabet.contains(c) {
-            return Err(CipherError::invalid_key_char(c))
+            continue
         }
         if keyed_alpha.contains(c) {
             continue
@@ -109,6 +128,35 @@ pub fn keyed_alphabet(keyword: &str, alphabet: &str) -> Result<String,CipherErro
             keyed_alpha.push(a)
         }
     }
-    Ok(keyed_alpha)
+    keyed_alpha
 }
- 
+
+
+pub fn dedup_alphabet(s: &str) -> String {
+    let mut seen: Vec<char> = Vec::with_capacity(s.len());
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        if seen.contains(&c) {
+            continue
+        } else {
+            out.push(c);
+            seen.push(c)
+        }
+    }
+    out
+}
+
+
+
+#[cfg(test)]
+mod string_ranking_tests {
+    use super::*;
+
+    #[test]
+    fn string_ranking() {
+        let text = "APPLES";
+        let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        assert_eq!(vec![0, 3, 4, 2, 1, 5],rank_str(text, alphabet));
+    }
+
+}

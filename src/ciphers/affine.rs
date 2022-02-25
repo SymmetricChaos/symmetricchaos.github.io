@@ -1,7 +1,7 @@
 use super::Cipher;
-use crate::errors::CipherError;
+use crate::{errors::CipherError};
+use crate::text_types::{PresetAlphabet::*};
 use crate::math_functions::mul_inv;
-use crate::text_functions::LATIN_UPPER;
 use rand::{prelude::ThreadRng, Rng};
 
 pub struct Affine {
@@ -11,28 +11,44 @@ pub struct Affine {
 }
 
 impl Affine {
-    pub fn new(add_key: usize, mul_key: usize, alphabet: &str) -> Self {
-        Self {
-            add_key,
-            mul_key,
-            alphabet: alphabet.to_string(),
-        }
+    fn encrypt_char(&self, c: char) -> char {
+        let mut pos = self.alphabet.chars().position(|x| x == c).unwrap();
+        pos *= self.mul_key;
+        pos += self.add_key;
+        pos %= self.alphabet_len();
+        self.alphabet.chars().nth(pos).unwrap()
     }
-
-    fn char_to_val(&self, c: char) -> Option<usize> {
-        self.alphabet.chars().position(|x| x == c)
+ 
+    fn decrypt_char(&self, c: char, mul_key_inv: usize) -> char {
+        let mut pos = self.alphabet.chars().position(|x| x == c).unwrap();
+        pos += self.alphabet_len() - self.add_key;
+        pos *= mul_key_inv;
+        pos %= self.alphabet_len();
+        self.alphabet.chars().nth(pos).unwrap()
     }
-
-    fn val_to_char(&self, v: usize) -> Option<char> {
-        self.alphabet.chars().nth(v)
+ 
+    pub fn alphabet_len(&self) -> usize {
+        self.alphabet.chars().count()
     }
 
     pub fn length(&self) -> usize {
         self.alphabet.chars().count()
     }
 
-    pub fn find_inverse(&self) -> Option<usize> {
-        mul_inv(self.mul_key, self.alphabet.chars().count())
+    pub fn find_mul_inverse(&self) -> Result<usize, CipherError> {
+        match mul_inv(self.mul_key, self.alphabet.chars().count()) {
+            Some(n) => Ok(n),
+            None => Err(CipherError::key("The multiplicative key of an Affine Cipher cannot share any factors with the length of the alphabet"))
+        }
+    }
+
+    pub fn check_input(&self, text: &str) -> Result<(), CipherError> {
+        for c in text.chars() {
+            if !self.alphabet.contains(c) {
+                return Err(CipherError::invalid_input_char(c))
+            }
+        }
+        Ok(())
     }
 }
 
@@ -41,47 +57,24 @@ impl Default for Affine {
         Self {
             add_key: 0,
             mul_key: 1,
-            alphabet: String::from(LATIN_UPPER),
+            alphabet: String::from(BasicLatin),
         }
     }
 }
 
 impl Cipher for Affine {
     fn encrypt(&self, text: &str) -> Result<String, CipherError> {
-        let symbols = text.chars();
-        let mut out = String::with_capacity(text.len());
-        match self.find_inverse() {
-            Some(n) => n,
-            None => return Err(CipherError::key("The multiplicative key of an Affine Cipher must have an inverse modulo the length of the alphabet"))
-        };
-        for s in symbols {
-            let val = self.char_to_val(s);
-            let n = match val {
-                Some(v) => (v * self.mul_key + self.add_key) % self.length(),
-                None => return Err(CipherError::invalid_input_char(s)),
-            };
-            // Unwrap is justified because the modulo operation forces n to be a valid index
-            out.push(self.val_to_char(n).unwrap())
-        }
+        self.check_input(text)?;
+        // The inverse is not used but it must exist
+        self.find_mul_inverse()?;
+        let out = text.chars().map(|s| self.encrypt_char(s)).collect();
         Ok(out)
     }
-
+ 
     fn decrypt(&self, text: &str) -> Result<String, CipherError> {
-        let symbols = text.chars();
-        let mut out = String::with_capacity(text.len());
-        let mki = match self.find_inverse() {
-            Some(n) => n,
-            None => return Err(CipherError::key("The multiplicative key of an Affine Cipher must have an inverse modulo the length of the alphabet"))
-        };
-        for s in symbols {
-            let val = self.char_to_val(s);
-            let n = match val {
-                Some(v) => ((v + self.length() - self.add_key) * mki) % self.length(),
-                None => return Err(CipherError::invalid_input_char(s)),
-            };
-            // Unwrap is justified because the modulo operation forces n to be a valid index
-            out.push(self.val_to_char(n).unwrap())
-        }
+        self.check_input(text)?;
+        let mul_inv = self.find_mul_inverse()?;
+        let out = text.chars().map(|s| self.decrypt_char(s, mul_inv)).collect();
         Ok(out)
     }
 
@@ -97,12 +90,12 @@ impl Cipher for Affine {
         }
     }
 
-    fn get_input_alphabet(&mut self) -> &String {
-        &mut self.alphabet
+    fn get_input_alphabet(&self) -> &String {
+        &self.alphabet
     }
 
-    fn get_output_alphabet(&mut self) -> &String {
-        &mut self.alphabet
+    fn get_output_alphabet(&self) -> &String {
+        &self.alphabet
     }
 
     fn get_mut_input_alphabet(&mut self) -> &mut String {
@@ -113,7 +106,7 @@ impl Cipher for Affine {
         &mut self.alphabet
     }
 
-    fn validate_settings(&self) -> Result<(), crate::errors::CipherErrors> {
+    fn validate_settings(&self) -> Result<(), CipherError> {
         todo!()
     }
 }
@@ -127,13 +120,17 @@ mod affine_tests {
 
     #[test]
     fn encrypt_test() {
-        let cipher = Affine::new(3, 5, LATIN_UPPER);
+        let mut cipher = Affine::default();
+        cipher.add_key = 3;
+        cipher.mul_key = 5;
         assert_eq!(cipher.encrypt(PLAINTEXT).unwrap(), CIPHERTEXT);
     }
 
     #[test]
     fn decrypt_test() {
-        let cipher = Affine::new(3, 5, LATIN_UPPER);
+        let mut cipher = Affine::default();
+        cipher.add_key = 3;
+        cipher.mul_key = 5;
         assert_eq!(cipher.decrypt(CIPHERTEXT).unwrap(), PLAINTEXT);
     }
 }
