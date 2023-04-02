@@ -1,4 +1,4 @@
-var cacheName = 'egui-template-pwa';
+var cacheName = 'crypto-gui-pwa';
 var filesToCache = [
   './',
   './index.html',
