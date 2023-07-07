@@ -8,11 +8,11 @@
     <title>crypto-gui</title>
 
     <!-- config for our rust wasm binary. go to https://trunkrs.dev/assets/#rust for more customization -->
-    <script type="module">import init from '/crypto-gui-228dd87f9f6ae64c.js';init('/crypto-gui-228dd87f9f6ae64c_bg.wasm');</script>
+    <script type="module">import init from '/crypto-gui.js';init('/crypto-gui_bg.wasm');</script>
     <!-- this is the base url relative to which other urls will be constructed. trunk will insert this from the public-url option -->
     <base href="/">
 
-    <link rel="icon" href="/favicon-f402c8741ce815ec.ico">
+    <link rel="icon" href="/favicon.ico">
 
 
     
@@ -114,8 +114,8 @@
         }
     </style>
 
-<link rel="preload" href="/crypto-gui-228dd87f9f6ae64c_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
-<link rel="modulepreload" href="/crypto-gui-228dd87f9f6ae64c.js"></head>
+<link rel="preload" href="/crypto-gui_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+<link rel="modulepreload" href="/crypto-gui.js"></head>
 
 <body>
     <!-- The WASM code will resize the canvas dynamically -->
