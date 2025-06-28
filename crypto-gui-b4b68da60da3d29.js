@@ -1560,19 +1560,19 @@ function __wbg_get_imports() {
         const ret = wasm.memory;
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper8194 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper8193 = function(arg0, arg1, arg2) {
         const ret = makeMutClosure(arg0, arg1, 3509, __wbg_adapter_32);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper8196 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper8195 = function(arg0, arg1, arg2) {
         const ret = makeMutClosure(arg0, arg1, 3509, __wbg_adapter_35);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper8198 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper8197 = function(arg0, arg1, arg2) {
         const ret = makeMutClosure(arg0, arg1, 3509, __wbg_adapter_32);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper8292 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper8291 = function(arg0, arg1, arg2) {
         const ret = makeMutClosure(arg0, arg1, 3551, __wbg_adapter_40);
         return addHeapObject(ret);
     };
@@ -1627,7 +1627,7 @@ async function __wbg_init(module_or_path) {
     console.warn('using deprecated parameters for the initialization function; pass a single object instead')
 
     if (typeof module_or_path === 'undefined') {
-        module_or_path = new URL('crypto-gui-ae8bd7731ab8e22a_bg.wasm', import.meta.url);
+        module_or_path = new URL('crypto-gui-b4b68da60da3d29_bg.wasm', import.meta.url);
     }
     const imports = __wbg_get_imports();
 
